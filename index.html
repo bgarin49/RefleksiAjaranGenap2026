@@ -272,72 +272,89 @@
       </button>
     </div>
 
-    <script>
-      function selectEmoji(el) {
+    <script type="module">
+      // Import fungsi yang dibutuhkan
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        addDoc,
+      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+      // 1. Konfigurasi Firebase (TEMPEL HASIL SALINAN ANDA DI SINI)
+      const firebaseConfig = {
+        apiKey: "AIzaSyDU8EarYjLpRSl-J3bGGVb8nVNjWcl3mvs",
+        authDomain: "refleksigenap2025-2026.firebaseapp.com",
+        projectId: "refleksigenap2025-2026",
+        storageBucket: "refleksigenap2025-2026.firebasestorage.app",
+        messagingSenderId: "120268266000",
+        appId: "1:120268266000:web:1c968d45cd46d20eaa8895",
+      };
+
+      // 2. Inisialisasi Firebase & Firestore
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      // Buat fungsi select agar tetap bisa dipakai tombol
+      window.selectEmoji = function (el) {
         document
           .querySelectorAll(".emoji-item")
           .forEach((e) => e.classList.remove("active"));
         el.classList.add("active");
-      }
+      };
 
-      function selectNum(el) {
+      window.selectNum = function (el) {
         document
           .querySelectorAll(".num-circle")
           .forEach((n) => n.classList.remove("active"));
         el.classList.add("active");
-      }
+      };
 
-      async function saveReflection() {
-        // 1. Collect values from text inputs and textareas
+      // 3. Fungsi Simpan ke Firestore
+      window.saveReflection = async function () {
         const textareas = document.querySelectorAll("textarea");
         const inputs = document.querySelectorAll('input[type="text"]');
-
-        // 2. Get the active emoji text or icon
         const activeEmoji = document.querySelector(".emoji-item.active");
-        const perasaan = activeEmoji ? activeEmoji.innerText : "";
-
-        // 3. Get the active number from the circles
         const activeNum = document.querySelector(".num-circle.active");
-        const semangat = activeNum ? activeNum.innerText : 0;
 
-        // 4. Map all data into an object
+        // Ambil checkbox yang dicentang
+        const goals = [];
+        document
+          .querySelectorAll('.checkbox-group input[type="checkbox"]:checked')
+          .forEach((cb) => {
+            goals.push(cb.parentElement.innerText.trim());
+          });
+
         const data = {
           nama: inputs[0].value,
           kelas: inputs[1].value,
           kebiasaan_baik: textareas[0].value,
           perbaikan: textareas[1].value,
-          perasaan: perasaan,
-          semangat: parseInt(semangat),
+          perasaan: activeEmoji ? activeEmoji.innerText : "",
+          janji: textareas[2].value,
+          cara_menepati: textareas[3].value,
+          tujuan_lebih: goals,
+          semangat: activeNum ? parseInt(activeNum.innerText) : 0,
+          timestamp: new Date(), // Menambah waktu pengiriman
         };
 
-        // 5. Validation Check
         if (!data.nama || !data.kelas) {
           alert("Mohon isi Nama dan Kelas!");
           return;
         }
 
         try {
-          const response = await fetch("save_data.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
-          });
-
-          const result = await response.json();
-          if (result.status === "success") {
-            alert("Refleksi Anda telah disimpan di database!");
-          } else {
-            alert("Gagal menyimpan: " + result.error);
-          }
+          // Simpan ke koleksi bernama "reflections"
+          const docRef = await addDoc(collection(db, "reflections"), data);
+          alert(
+            "Berhasil! Refleksi Anda telah disimpan dengan ID: " + docRef.id
+          );
+          location.reload(); // Refresh halaman setelah sukses
         } catch (error) {
-          console.error("Error:", error);
-          alert("Terjadi kesalahan koneksi ke server.");
+          console.error("Error adding document: ", error);
+          alert("Gagal menyimpan ke Firebase: " + error.message);
         }
-      }
-
-      //   function saveReflection() {
-      //     alert("Refleksi Anda telah disimpan! Semangat untuk semester ini!");
-      //   }
+      };
     </script>
   </body>
 </html>
